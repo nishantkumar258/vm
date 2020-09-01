@@ -1,8 +1,6 @@
 package com.example.demo.service;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import java.util.EnumMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,17 +22,17 @@ public class VendingMachineService {
 	@Autowired
 	VendingMachineRepository vendingMachineRepository;
 	
-	private Map<Product, Integer> productMap;
-	private Map<Coin, Integer> coinMap;
+	private EnumMap<Product, Integer> productMap;
+	private EnumMap<Coin, Integer> coinMap;
 	
 	VendingMachineService(){
 		
-		productMap = new HashMap<>();
+		productMap = new EnumMap<>(Product.class);
 		productMap.put(Product.CANDY, 3);
 		productMap.put(Product.CHOCOLATE, 3);
 		productMap.put(Product.COLDDRINK, 3);
 		
-		coinMap = new HashMap<>();
+		coinMap = new EnumMap<>(Coin.class);
 		coinMap.put(Coin.PENNY, 5);
 		coinMap.put(Coin.NICKLE, 5);
 		coinMap.put(Coin.DIME, 5);
@@ -65,7 +63,7 @@ public class VendingMachineService {
 	}
 	
 	private boolean checkAmount(Product product, Integer amount) {
-		if(amount > product.getProductValue()) {
+		if(amount >= product.getProductValue()) {
 			return true;
 		}
 		throw new InSufficientAmount("InSufficient Amount");
@@ -73,41 +71,45 @@ public class VendingMachineService {
 	
 	private ProductChange getProductChange(Product product, Integer amount) {
 		int change = amount - product.getProductValue();
-		Map<Coin,Integer> coins = new HashMap<>();
-		int quartercount = 0;
+		EnumMap<Coin,Integer> coins = new EnumMap<>(Coin.class);
+		int quarterCount = 0;
 		int	dimeCount = 0; 
-		int	nickleCount = 0;
+		int	nickleCount = 0; 
 		int pennyCount = 0;
+		int totalQuarterCount = coinMap.get(Coin.QUARTER);
+		int	totalDimeCount = coinMap.get(Coin.DIME); 
+		int	totalNickleCount = coinMap.get(Coin.NICKLE);
+		int totalPennyCount = coinMap.get(Coin.PENNY);
 		
 		while(change > 0) {
-			if(change >= Coin.QUARTER.getCoinValue() && coinMap.get(Coin.QUARTER) > 0) {
-				quartercount = quartercount + 1;
-				coins.put(Coin.QUARTER,quartercount);
-				coinMap.put(Coin.QUARTER, coinMap.get(Coin.QUARTER) - 1);
+			if(change >= Coin.QUARTER.getCoinValue() && totalQuarterCount > 0) {
+				quarterCount = quarterCount + 1;
+				totalQuarterCount = totalQuarterCount - 1;
 				change = change - Coin.QUARTER.getCoinValue();
-				continue;
-			}else if(change >= Coin.DIME.getCoinValue() && coinMap.get(Coin.DIME) > 0) {
+			}else if(change >= Coin.DIME.getCoinValue() && totalDimeCount > 0) {
 				dimeCount = dimeCount + 1;
-				coins.put(Coin.DIME,dimeCount);
-				coinMap.put(Coin.DIME, coinMap.get(Coin.DIME) - 1);
+				totalDimeCount = totalDimeCount - 1;
 				change = change - Coin.DIME.getCoinValue();
-				continue;
-			}else if(change >= Coin.NICKLE.getCoinValue() && coinMap.get(Coin.NICKLE) > 0) {
+			}else if(change >= Coin.NICKLE.getCoinValue() && totalNickleCount > 0) {
 				nickleCount = nickleCount + 1;
-				coins.put(Coin.NICKLE,nickleCount);
-				coinMap.put(Coin.NICKLE, coinMap.get(Coin.NICKLE) - 1);
+				totalNickleCount = totalNickleCount - 1;
 				change = change - Coin.NICKLE.getCoinValue();
-				continue;
-			}else if(change >= Coin.PENNY.getCoinValue() && coinMap.get(Coin.PENNY) > 0){
+			}else if(change >= Coin.PENNY.getCoinValue() && totalPennyCount > 0){
 				pennyCount = pennyCount + 1;
-				coins.put(Coin.PENNY,pennyCount);
-				coinMap.put(Coin.PENNY, coinMap.get(Coin.PENNY) - 1);
+				totalPennyCount = totalPennyCount - 1;
 				change = change - Coin.PENNY.getCoinValue();
-				continue;
 			}else {
 				throw new InSufficientChange("InSufficient Change");
 			}
 		}
+		coins.put(Coin.QUARTER,quarterCount);
+		coinMap.put(Coin.QUARTER,totalQuarterCount);
+		coins.put(Coin.DIME,dimeCount);
+		coinMap.put(Coin.DIME,totalDimeCount);
+		coins.put(Coin.NICKLE,nickleCount);
+		coinMap.put(Coin.NICKLE,totalNickleCount);
+		coins.put(Coin.PENNY,pennyCount);
+		coinMap.put(Coin.PENNY,totalPennyCount);
 		productMap.put(product, productMap.get(product) - 1);
 		return new ProductChange(product, coins);
 	}
